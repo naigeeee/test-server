@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "PDFF - FSM - Master",
-    "version": "2.0.0",
-    "description": "Data analysis tool with CSV upload and optional Google Sheets integration."
+    "version": "3.0.0",
+    "description": "Google Sheets data import and analysis tool."
   },
   "paths": {
     "/health": {
@@ -20,19 +20,16 @@
     },
     "/api/info": {
       "get": {
-        "summary": "App info",
+        "summary": "App info and loaded sheets",
         "operationId": "info",
         "responses": {
-          "200": {
-            "description": "App metadata",
-            "content": { "application/json": { "schema": { "type": "object" } } }
-          }
+          "200": { "description": "App metadata", "content": { "application/json": { "schema": { "type": "object" } } } }
         }
       }
     },
     "/api/upload": {
       "post": {
-        "summary": "Upload Main sheet CSV",
+        "summary": "Upload Main sheet CSV/TSV",
         "operationId": "uploadMain",
         "requestBody": {
           "required": true,
@@ -43,7 +40,7 @@
     },
     "/api/upload/booking": {
       "post": {
-        "summary": "Upload Booking v2 CSV",
+        "summary": "Upload Booking v2 CSV/TSV",
         "operationId": "uploadBooking",
         "requestBody": {
           "required": true,
@@ -54,7 +51,7 @@
     },
     "/api/upload/file": {
       "post": {
-        "summary": "Upload CSV file",
+        "summary": "Upload CSV/TSV file",
         "operationId": "uploadFile",
         "parameters": [
           { "name": "sheet", "in": "query", "schema": { "type": "string", "default": "main" } }
@@ -68,7 +65,7 @@
     },
     "/api/upload/{sheet}": {
       "delete": {
-        "summary": "Clear sheet data",
+        "summary": "Clear sheet data from memory",
         "operationId": "clearSheet",
         "parameters": [
           { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } }
@@ -78,7 +75,7 @@
     },
     "/api/data/{sheet}": {
       "get": {
-        "summary": "Get sheet data",
+        "summary": "Get sheet data with search, filter, sort",
         "operationId": "getSheetData",
         "parameters": [
           { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } },
@@ -93,7 +90,7 @@
     },
     "/api/analysis/{sheet}": {
       "get": {
-        "summary": "Analyze sheet data",
+        "summary": "Get column statistics for a sheet",
         "operationId": "analyzeSheet",
         "parameters": [
           { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } }

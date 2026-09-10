@@ -1,9 +1,4 @@
 description: >
-  PDFF FSM Master data analysis tool. Imports booking and shipment data
-  via CSV paste/upload and provides searchable, sortable tables with
-  analysis summaries and bar charts. Optional Google Apps Script proxy
-  for direct Google Sheets integration.
-
-# Skill/plugin version this app was last deployed with — stamped by
-# /substrait:deploy; do not edit by hand.
-scaffold_version: 2026.09.08.024724
+  PDFF FSM Master data analysis tool. Import Google Sheets data (Main & Booking v2)
+  via CSV paste/upload for searchable, sortable tables and analysis with statistics
+  and bar charts.
