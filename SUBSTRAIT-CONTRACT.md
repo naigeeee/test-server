@@ -1,7 +1,7 @@
 <!-- BEGIN substrait-app contract (v7) — managed by the substrait plugin (link/deploy); edits inside this block are overwritten on update. Delete the whole block to opt out. -->
 ## Substrait deployment
 
-**Linked app:** `test-server-2` — https://test-server-2.ninjavan.apps.substrait.build
+**Linked app:** `pdff-fsm` — https://pdff-fsm.ninjavan.apps.substrait.build
 
 This project deploys to the **Substrait platform** (linked via the gitignored
 `.substrait/config.json`). Deploy with **`/substrait:deploy`** (packages source-only,
