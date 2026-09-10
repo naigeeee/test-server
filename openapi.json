@@ -1,55 +1,104 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "My First Substrait App",
-    "description": "A starter internal tool. Serves one web page and a small JSON API.",
-    "version": "0.1.0"
+    "title": "PDFF - FSM - Master",
+    "version": "2.0.0",
+    "description": "Data analysis tool with CSV upload and optional Google Sheets integration."
   },
   "paths": {
     "/health": {
       "get": {
-        "tags": ["system"],
-        "summary": "Health",
-        "description": "Substrait calls this to decide whether the app started correctly.",
-        "operationId": "health_health_get",
+        "summary": "Health check",
+        "operationId": "health",
         "responses": {
           "200": {
-            "description": "Service is up",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": { "status": { "type": "string", "example": "ok" } },
-                  "required": ["status"]
-                }
-              }
-            }
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string" } } } } }
           }
         }
       }
     },
     "/api/info": {
       "get": {
-        "summary": "Info",
-        "description": "Returns the app name and current server time, so the page can prove the backend is running.",
-        "operationId": "info_api_info_get",
+        "summary": "App info",
+        "operationId": "info",
         "responses": {
           "200": {
-            "description": "Application information",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "app": { "type": "string", "example": "My First Substrait App" },
-                    "server_time": { "type": "string", "example": "2026-08-20 06:15:48 UTC" }
-                  },
-                  "required": ["app", "server_time"]
-                }
-              }
-            }
+            "description": "App metadata",
+            "content": { "application/json": { "schema": { "type": "object" } } }
           }
         }
+      }
+    },
+    "/api/upload": {
+      "post": {
+        "summary": "Upload Main sheet CSV",
+        "operationId": "uploadMain",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "csv_text": { "type": "string" } }, "required": ["csv_text"] } } }
+        },
+        "responses": { "200": { "description": "Upload result" } }
+      }
+    },
+    "/api/upload/booking": {
+      "post": {
+        "summary": "Upload Booking v2 CSV",
+        "operationId": "uploadBooking",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "csv_text": { "type": "string" } }, "required": ["csv_text"] } } }
+        },
+        "responses": { "200": { "description": "Upload result" } }
+      }
+    },
+    "/api/upload/file": {
+      "post": {
+        "summary": "Upload CSV file",
+        "operationId": "uploadFile",
+        "parameters": [
+          { "name": "sheet", "in": "query", "schema": { "type": "string", "default": "main" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "file": { "type": "string", "format": "binary" } }, "required": ["file"] } } }
+        },
+        "responses": { "200": { "description": "Upload result" } }
+      }
+    },
+    "/api/upload/{sheet}": {
+      "delete": {
+        "summary": "Clear sheet data",
+        "operationId": "clearSheet",
+        "parameters": [
+          { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Cleared" } }
+      }
+    },
+    "/api/data/{sheet}": {
+      "get": {
+        "summary": "Get sheet data",
+        "operationId": "getSheetData",
+        "parameters": [
+          { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "col", "in": "query", "schema": { "type": "string" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 500 } },
+          { "name": "offset", "in": "query", "schema": { "type": "integer", "default": 0 } }
+        ],
+        "responses": { "200": { "description": "Sheet data with headers and rows" } }
+      }
+    },
+    "/api/analysis/{sheet}": {
+      "get": {
+        "summary": "Analyze sheet data",
+        "operationId": "analyzeSheet",
+        "parameters": [
+          { "name": "sheet", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Column statistics" } }
       }
     }
   }
