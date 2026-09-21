@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "My First Substrait App",
-    "description": "A starter internal tool. Serves one web page and a small JSON API.",
+    "title": "Event Feedback Survey",
+    "description": "A survey feedback form where participants can give feedback responses after events. Responses are stored permanently in the database for future analysis.",
     "version": "0.1.0"
   },
   "paths": {
@@ -31,7 +31,7 @@
     "/api/info": {
       "get": {
         "summary": "Info",
-        "description": "Returns the app name and current server time, so the page can prove the backend is running.",
+        "description": "Returns the app name, storage mode, and current server time.",
         "operationId": "info_api_info_get",
         "responses": {
           "200": {
@@ -41,10 +41,100 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "app": { "type": "string", "example": "My First Substrait App" },
-                    "server_time": { "type": "string", "example": "2026-08-20 06:15:48 UTC" }
+                    "app": { "type": "string", "example": "Event Feedback Survey" },
+                    "storage": { "type": "string", "enum": ["database", "temporary-memory"], "example": "database" },
+                    "server_time": { "type": "string", "example": "2026-09-21 10:00:00 UTC" }
                   },
-                  "required": ["app", "server_time"]
+                  "required": ["app", "storage", "server_time"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/feedback": {
+      "get": {
+        "summary": "List Feedback",
+        "description": "Returns all feedback responses in reverse chronological order.",
+        "operationId": "list_feedback_api_feedback_get",
+        "responses": {
+          "200": {
+            "description": "List of feedback responses",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "feedback": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "respondent_name": { "type": "string" },
+                          "rating": { "type": "integer" },
+                          "category": { "type": "string" },
+                          "comments": { "type": ["string", "null"] },
+                          "event_name": { "type": "string" },
+                          "created_at": { "type": "string" }
+                        }
+                      }
+                    },
+                    "count": { "type": "integer" }
+                  },
+                  "required": ["feedback", "count"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit Feedback",
+        "description": "Submit a new feedback response for an event.",
+        "operationId": "submit_feedback_api_feedback_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "respondent_name": { "type": "string", "default": "Anonymous", "maxLength": 255 },
+                  "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+                  "category": { "type": "string", "maxLength": 100 },
+                  "comments": { "type": ["string", "null"], "maxLength": 2000 },
+                  "event_name": { "type": "string", "maxLength": 255 }
+                },
+                "required": ["rating", "category", "event_name"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Feedback submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "submitted" },
+                    "feedback": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "respondent_name": { "type": "string" },
+                        "rating": { "type": "integer" },
+                        "category": { "type": "string" },
+                        "comments": { "type": ["string", "null"] },
+                        "event_name": { "type": "string" },
+                        "created_at": { "type": "string" }
+                      }
+                    }
+                  },
+                  "required": ["status", "feedback"]
                 }
               }
             }
