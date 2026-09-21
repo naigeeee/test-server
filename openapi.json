@@ -141,6 +141,98 @@
           }
         }
       }
+    },
+    "/api/feedback/export": {
+      "get": {
+        "tags": ["sync"],
+        "summary": "Export Feedback (JSON)",
+        "description": "Export all feedback as JSON. Requires x-api-key header. Pass ?since=ISO_TIMESTAMP for incremental sync.",
+        "operationId": "export_feedback_api_feedback_export_get",
+        "parameters": [
+          {
+            "name": "since",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" },
+            "description": "ISO timestamp — only return feedback created after this time."
+          }
+        ],
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Feedback export",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "feedback": { "type": "array", "items": { "$ref": "#/components/schemas/FeedbackRow" } },
+                    "count": { "type": "integer" }
+                  },
+                  "required": ["feedback", "count"]
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/api/feedback/export/csv": {
+      "get": {
+        "tags": ["sync"],
+        "summary": "Export Feedback (CSV)",
+        "description": "Download all feedback as a CSV file. Requires x-api-key header.",
+        "operationId": "export_feedback_csv_api_feedback_export_csv_get",
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "CSV file download",
+            "content": { "text/csv": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    },
+    "/api/feedback/sync": {
+      "post": {
+        "tags": ["sync"],
+        "summary": "Sync Status",
+        "description": "Health check for the sync endpoint. Use GET /api/feedback/export to pull data.",
+        "operationId": "sync_feedback_api_feedback_sync_post",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Sync status" },
+          "401": { "description": "Invalid or missing API key" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key for export/sync endpoints. Set as FEEDBACK_API_KEY env var."
+      }
+    },
+    "schemas": {
+      "FeedbackRow": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "respondent_name": { "type": "string" },
+          "rating": { "type": "integer" },
+          "category": { "type": "string" },
+          "comments": { "type": ["string", "null"] },
+          "event_name": { "type": "string" },
+          "created_at": { "type": "string" }
+        }
+      }
     }
   }
 }

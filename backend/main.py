@@ -1,14 +1,17 @@
 import os
+import csv
+import io
 import logging
 from datetime import datetime, timezone
 from urllib.parse import urlparse, unquote
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Header
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 APP_NAME = "Event Feedback Survey"
+FEEDBACK_API_KEY = os.environ.get("FEEDBACK_API_KEY", "")
 
 app = FastAPI(title=APP_NAME, docs_url="/api/docs")
 
@@ -104,6 +107,24 @@ def _get_all_feedback() -> list[dict]:
     return list(reversed(memory_store))
 
 
+def _get_feedback_since(since: str) -> list[dict]:
+    """Return feedback created after the given ISO timestamp."""
+    if db_pool:
+        try:
+            with db_pool.cursor() as cur:
+                cur.execute(
+                    "SELECT id, respondent_name, rating, category, comments, event_name, "
+                    "created_at FROM feedback_responses WHERE created_at > %s ORDER BY created_at DESC",
+                    (since,),
+                )
+                return cur.fetchall()
+        except Exception as e:
+            logger.error("DB read (since) failed: %s — using memory.", e)
+    cutoff = datetime.fromisoformat(since.replace("Z", "+00:00"))
+    return [r for r in reversed(memory_store)
+            if datetime.fromisoformat(r.get("created_at", "2000-01-01T00:00:00+00:00").replace("Z", "+00:00")) > cutoff]
+
+
 # ---------------------------------------------------------------------------
 # Pydantic models
 # ---------------------------------------------------------------------------
@@ -144,6 +165,67 @@ def submit_feedback(fb: FeedbackCreate):
 @app.get("/api/feedback")
 def list_feedback():
     return {"feedback": _get_all_feedback(), "count": len(_get_all_feedback())}
+
+
+# ---------------------------------------------------------------------------
+# API key verification helper
+# ---------------------------------------------------------------------------
+
+def _verify_api_key(x_api_key: Optional[str] = Header(None)):
+    if not FEEDBACK_API_KEY:
+        raise HTTPException(status_code=500, detail="FEEDBACK_API_KEY not configured on the server.")
+    if x_api_key != FEEDBACK_API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key.")
+
+
+# ---------------------------------------------------------------------------
+# Export endpoints (Google Apps Script calls these)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/feedback/export")
+def export_feedback(x_api_key: Optional[str] = Header(None), since: Optional[str] = None):
+    """Export feedback as JSON. Pass ?since=ISO_TIMESTAMP for incremental sync."""
+    _verify_api_key(x_api_key)
+    if since:
+        rows = _get_feedback_since(since)
+    else:
+        rows = _get_all_feedback()
+    return {"feedback": rows, "count": len(rows)}
+
+
+@app.get("/api/feedback/export/csv")
+def export_feedback_csv(x_api_key: Optional[str] = Header(None)):
+    """Export all feedback as a downloadable CSV file."""
+    _verify_api_key(x_api_key)
+    rows = _get_all_feedback()
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["id", "respondent_name", "rating", "category", "comments", "event_name", "created_at"])
+    for r in rows:
+        writer.writerow([r.get("id"), r.get("respondent_name", ""), r.get("rating", ""),
+                         r.get("category", ""), r.get("comments", ""),
+                         r.get("event_name", ""), r.get("created_at", "")])
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=feedback_export.csv"},
+    )
+
+
+@app.post("/api/feedback/sync")
+def sync_feedback_to_sheet(payload: dict, x_api_key: Optional[str] = Header(None)):
+    """
+    Receives rows from Google Apps Script and returns them for Sheet writing.
+    This is a read-only sync: Apps Script pulls from /api/feedback/export.
+    This endpoint exists for future push-from-Sheet capability.
+    """
+    _verify_api_key(x_api_key)
+    return {
+        "status": "ok",
+        "message": "Use GET /api/feedback/export to pull all feedback into your Sheet.",
+        "server_time": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
+    }
 
 
 # ---------------------------------------------------------------------------
